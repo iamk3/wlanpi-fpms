@@ -11,6 +11,7 @@ from fpms.modules.platform import *
 # set possible vars to None
 DISPLAY_TYPE = None
 I2C_PORT = None
+SPI_BUS_SPEED = None
 I2C_ADDRESS = None
 INTERFACE_TYPE = None
 WIDTH = None
@@ -19,6 +20,7 @@ COLOR_ORDER_BGR = False
 GPIO_DATA_COMMAND = None
 GPIO_RESET = None
 GPIO_BACKLIGHT = None
+GPIO_CS = None
 BACKLIGHT_ACTIVE = None
 H_OFFSET = None
 V_OFFSET = None
@@ -33,26 +35,30 @@ if PLATFORM == PLATFORM_PRO:
 elif PLATFORM == PLATFORM_R4:
     # 1.44 in LCD Display HAT settings
     DISPLAY_TYPE = "st7735"
-    INTERFACE_TYPE = "spi"
+    INTERFACE_TYPE = "gpio_cs_spi"
+    SPI_BUS_SPEED = "2000000"
     WIDTH = "128"
     HEIGHT = "128"
     COLOR_ORDER_BGR = True
     GPIO_DATA_COMMAND = "25"
     GPIO_RESET = "27"
     GPIO_BACKLIGHT = "24"
+    GPIO_CS = "8"
     BACKLIGHT_ACTIVE = "high"
     H_OFFSET = "1"
     V_OFFSET = "2"
 elif PLATFORM == PLATFORM_M4:
     # 1.44 in LCD Display HAT settings
     DISPLAY_TYPE = "st7735"
-    INTERFACE_TYPE = "spi"
+    INTERFACE_TYPE = "gpio_cs_spi"
+    SPI_BUS_SPEED = "2000000"
     WIDTH = "128"
     HEIGHT = "128"
     COLOR_ORDER_BGR = True
     GPIO_DATA_COMMAND = "25"
     GPIO_RESET = "27"
     GPIO_BACKLIGHT = "24"
+    GPIO_CS = "8"
     BACKLIGHT_ACTIVE = "high"
     H_OFFSET = "1"
     V_OFFSET = "2"
@@ -162,6 +168,10 @@ if I2C_PORT:
     actual_args.append("--i2c-port")
     actual_args.append(I2C_PORT)
 
+if SPI_BUS_SPEED:
+    actual_args.append("--spi-bus-speed")
+    actual_args.append(SPI_BUS_SPEED)
+
 if COLOR_ORDER_BGR:
     actual_args.append("--bgr")
 
@@ -176,6 +186,10 @@ if GPIO_RESET:
 if GPIO_BACKLIGHT:
     actual_args.append("--gpio-backlight")
     actual_args.append(GPIO_BACKLIGHT)
+
+if GPIO_CS:
+    actual_args.append("--gpio-chip-select")
+    actual_args.append(GPIO_CS)
 
 if BACKLIGHT_ACTIVE:
     actual_args.append("--backlight-active")

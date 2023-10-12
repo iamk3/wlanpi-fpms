@@ -15,7 +15,9 @@ from fpms.modules.pages.display import *
 from fpms.modules.pages.simpletable import *
 from fpms.modules.battery import *
 from fpms.modules.bluetooth import *
+from fpms.modules.apps.kismet import *
 from fpms.modules.apps.profiler import *
+from fpms.modules.apps.scanner import *
 from fpms.modules.themes import THEME
 from fpms.modules.constants import *
 from fpms.modules.env_utils import EnvUtils
@@ -36,8 +38,14 @@ class HomePage(object):
         # create simple table
         self.simple_table_obj = SimpleTable(g_vars)
 
+        # create a scanner object
+        self.scanner_obj = Scanner(g_vars)
+
         # create a profiler object
         self.profiler_obj = Profiler(g_vars)
+
+        # create a kismet object
+        self.kismet_obj = Kismet(g_vars)
 
         # create env utils object
         self.env_obj = EnvUtils()
@@ -87,6 +95,16 @@ class HomePage(object):
             return False
         except subprocess.CalledProcessError:
             return True
+
+
+    def check_port_blinker(self, g_vars):
+        '''
+        Returns true if port blinker is active, false otherwise.
+        '''
+        if g_vars['blinker_status'] == True:
+            return True
+        else:
+            return False
 
 
     def check_wiperf_status(self):
@@ -303,9 +321,18 @@ class HomePage(object):
         elif not self.check_reg_domain():
             alert_bar_contents = "REG. DOMAIN NOT SET"
             alert_bar_error = True
+        elif self.check_port_blinker(g_vars):
+            if not display_alternate_title:
+                alert_bar_contents = "PORT BLINKER ACTIVE"
+        elif self.scanner_obj.scanner_active(g_vars):
+            if not display_alternate_title:
+                alert_bar_contents = "SCANNER ACTIVE"
         elif self.profiler_obj.profiler_beaconing():
             if not display_alternate_title:
                 alert_bar_contents = "PROFILER ACTIVE"
+        elif self.kismet_obj.kismet_status():
+            if not display_alternate_title:
+                alert_bar_contents = "KISMET ACTIVE"
 
         # Display alert bar
         self.alert_bar(g_vars, alert_bar_contents, x=0, y=PAGE_WIDTH-SYSTEM_BAR_HEIGHT-SYSTEM_BAR_HEIGHT, error=alert_bar_error)

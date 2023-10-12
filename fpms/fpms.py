@@ -34,6 +34,7 @@ if not os.geteuid()==0:
 
 from .__version__ import __title__, __version__
 from .modules import wlanpi_oled as oled
+from .modules.apps.kismet import *
 from .modules.apps.profiler import *
 from .modules.apps.scanner import *
 from .modules.bluetooth import *
@@ -343,6 +344,14 @@ optional options:
     ###########################
     # Apps area
     ###########################
+    def kismet_start():
+        app_obj = Kismet(g_vars)
+        app_obj.kismet_start(g_vars)
+
+    def kismet_stop():
+        app_obj = Kismet(g_vars)
+        app_obj.kismet_stop(g_vars)
+
     def profiler_status():
         app_obj = Profiler(g_vars)
         app_obj.profiler_status(g_vars)
@@ -383,9 +392,17 @@ optional options:
         app_obj = Scanner(g_vars)
         app_obj.scanner_scan_nohidden(g_vars)
 
-    def scanner_scan_tofile():
+    def scanner_scan_tofile_csv():
         app_obj = Scanner(g_vars)
-        app_obj.scanner_scan_tofile(g_vars)
+        app_obj.scanner_scan_tofile_csv(g_vars)
+
+    def scanner_scan_tofile_pcap_start():
+        app_obj = Scanner(g_vars)
+        app_obj.scanner_scan_tofile_pcap_start(g_vars)
+
+    def scanner_scan_tofile_pcap_stop():
+        app_obj = Scanner(g_vars)
+        app_obj.scanner_scan_tofile_pcap_stop(g_vars)
 
     ###########################
     # System menu area utils
@@ -439,21 +456,17 @@ optional options:
         system_obj = System(g_vars)
         system_obj.show_date(g_vars)
 
+    def set_time_zone_auto():
+        system_obj = TimeZone(g_vars)
+        system_obj.set_time_zone_auto(g_vars)
+
     def set_time_zone():
-        g_vars['timezone_selected'] = (timezones_available[g_vars['current_menu_location'][3]]['country'] +
+        g_vars['timezone_selected'] = (timezones_available[g_vars['current_menu_location'][4]]['country'] +
         "/" +
-        timezones_available[g_vars['current_menu_location'][3]]['timezones'][g_vars['current_menu_location'][4]])
+        timezones_available[g_vars['current_menu_location'][4]]['timezones'][g_vars['current_menu_location'][5]])
 
         system_obj = TimeZone(g_vars)
         system_obj.set_time_zone_from_gvars(g_vars)
-
-    def set_time_zone_london():
-        system_obj = TimeZone(g_vars)
-        system_obj.set_time_zone_london(g_vars)
-
-    def set_time_zone_prague():
-        system_obj = TimeZone(g_vars)
-        system_obj.set_time_zone_prague(g_vars)
 
     def show_about():
         system_obj = System(g_vars)
@@ -569,7 +582,7 @@ optional options:
     for timezones_country in timezones_available:
         g_vars['timezones_available'].append({"name": timezones_country['country'], "action": []})
         for timezone in timezones_country['timezones']:
-            g_vars['timezones_available'][-1]['action'].append({"name": timezone, "action": [{"name": "Confirm & Reboot", "action": set_time_zone}]})
+            g_vars['timezones_available'][-1]['action'].append({"name": timezone, "action": set_time_zone})
 
     # assume classic mode menu initially...
     menu = [
@@ -598,13 +611,10 @@ optional options:
             ]
             },
             {"name": "Cloud Tests", "action": [
-                {"name": "Run Aruba Tests", "action": show_aruba_test},
-                {"name": "Extreme Tests", "action": [
-                	{"name": "Run CloudIQ Frankfurt", "action": show_extreme_test},
-                 ]
-                 },
-                {"name": "Run Mist Tests", "action": show_mist_test},
-                {"name": "Run Ruckus Tests", "action": show_ruckus_test},
+                {"name": "Aruba Central", "action": show_aruba_test},
+                {"name": "ExtremeCloud IQ", "action": show_extreme_test},
+                {"name": "Mist Cloud", "action": show_mist_test},
+                {"name": "RUCKUS Cloud", "action": show_ruckus_test},
             ]
             },
             {"name": "Port Blinker", "action": [
@@ -641,6 +651,11 @@ optional options:
         ]
         },
         {"name": "Apps", "action": [
+            {"name": "Kismet", "action": [
+                {"name": "Start", "action": kismet_start},
+                {"name": "Stop", "action": kismet_stop},
+            ]
+            },
             {"name": "Profiler",   "action": [
                 {"name": "Status", "action":          profiler_status},
                 {"name": "Stop", "action":            profiler_stop},
@@ -661,7 +676,11 @@ optional options:
             {"name": "Scanner", "action": [
                 {"name": "Scan", "action": scanner_scan},
                 {"name": "Scan (no hidden)", "action": scanner_scan_nohidden},
-                {"name": "Scan to file", "action": scanner_scan_tofile},
+                {"name": "Scan to CSV", "action": scanner_scan_tofile_csv},
+                {"name": "Scan to PCAP", "action": [
+                    {"name": "Start", "action" : scanner_scan_tofile_pcap_start},
+                    {"name": "Stop", "action" : scanner_scan_tofile_pcap_stop}
+                ]}
             ]
             },
         ]
@@ -678,7 +697,10 @@ optional options:
             #     ]},
             {"name": "Date & Time", "action": [
                 {"name": "Show Time & Zone", "action": show_date},
-                {"name": "Set Timezone", "action": g_vars['timezones_available']},
+                {"name": "Set Timezone", "action": [
+                    {"name": "Auto", "action" : set_time_zone_auto},
+                    {"name": "Manual", "action": g_vars['timezones_available']}
+                ]},
                 ]},
             {"name": "Summary", "action": show_summary},
             {"name": "RF Domain", "action": [
@@ -696,13 +718,6 @@ optional options:
                 {"name": "Set Domain DE", "action": [
                     {"name": "Confirm & Reboot", "action": set_reg_domain_de},]},
                 ]},
-            {"name": "Software Update", "action": [
-                {"name": "Check for Updates", "action": check_for_updates},
-                {"name": "Install Updates", "action": [
-                    { "name": "Confirm", "action": install_updates}
-                ]},
-            ]
-            },
             {"name": "Reboot",   "action": [
                 {"name": "Confirm", "action": reboot},
             ]
