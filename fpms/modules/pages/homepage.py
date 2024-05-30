@@ -72,7 +72,7 @@ class HomePage(object):
         '''
         interfaces = []
         try:
-            interfaces = subprocess.check_output(f"{IWCONFIG_FILE} 2>&1 | grep 802.11" + "| awk '{ print $1 }'", shell=True).decode().strip().split()
+            interfaces = subprocess.check_output(f"{IW_FILE} dev 2>&1 | grep -i interface" + "| awk '{ print $2 }'", shell=True).decode().strip().split()
             if len(interfaces) > 0:
                 return True
         except Exception as e:
@@ -239,10 +239,7 @@ class HomePage(object):
         return status
 
     def home_page(self, g_vars, menu):
-        if PLATFORM == PLATFORM_R4 or PLATFORM == PLATFORM_M4 or PLATFORM == PLATFORM_PRO:
-            self.home_page_pro(g_vars, menu)
-        else:
-            self.home_page_legacy(g_vars, menu)
+        self.home_page_pro(g_vars, menu)
 
     def home_page_pro(self, g_vars, menu):
         x = 0
@@ -303,10 +300,10 @@ class HomePage(object):
 
         if display_alternate_title:
             y -= 2
-            canvas.text((x + (PAGE_WIDTH - FONTB10.getsize(title)[0])/2, y), title, font=FONTB10, fill=THEME.text_highlighted_color.value)
+            canvas.text((x + (PAGE_WIDTH - FONTB10.getbbox(title)[2])/2, y), title, font=FONTB10, fill=THEME.text_highlighted_color.value)
             y += 10 + padding * 2
         else:
-            canvas.text((x + (PAGE_WIDTH - FONTB13.getsize(title)[0])/2, y + padding), title, font=FONTB13, fill=THEME.text_highlighted_color.value)
+            canvas.text((x + (PAGE_WIDTH - FONTB13.getbbox(title)[2])/2, y + padding), title, font=FONTB13, fill=THEME.text_highlighted_color.value)
             y += 14 + padding * 2
 
         mode(g_vars, x=x, y=y, padding=padding)
@@ -453,10 +450,10 @@ class HomePage(object):
         link_status = self.if_link_status(if_name)
         if addr != None:
             text_color = THEME.text_color.value if addr.lower() != "no ip address" else THEME.text_important_color.value
-            canvas.text((x + (PAGE_WIDTH - FONTB12.getsize(addr)[0])/2, y + padding + offset), addr, font=FONTB12, fill=text_color)
+            canvas.text((x + (PAGE_WIDTH - FONTB12.getbbox(addr)[2])/2, y + padding + offset), addr, font=FONTB12, fill=text_color)
             offset += 13
         if link_status != None:
-            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getsize(link_status)[0])/2, y + padding + offset), link_status, font=SMART_FONT, fill=THEME.text_secondary_color.value)
+            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getbbox(link_status)[2])/2, y + padding + offset), link_status, font=SMART_FONT, fill=THEME.text_secondary_color.value)
             offset += 11
 
         return offset + 8
@@ -471,7 +468,7 @@ class HomePage(object):
         addr = self.if_address(if_name)
         if addr.lower() != "no ip address":
             info = f"{label}: {addr}"
-            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getsize(info)[0])/2, y), info, font=SMART_FONT, fill=THEME.text_tertiary_color.value)
+            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getbbox(info)[2])/2, y), info, font=SMART_FONT, fill=THEME.text_tertiary_color.value)
             return 11
 
         return 0
@@ -516,7 +513,7 @@ class HomePage(object):
             client_count = self.wifi_client_count()
             if client_count >= 0:
                 clients = str(client_count) + (" client" if client_count == 1 else " clients")
-                canvas.text((x + (PAGE_WIDTH - SMART_FONT.getsize(clients)[0])/2, y), clients, font=SMART_FONT, fill=THEME.text_secondary_color.value)
+                canvas.text((x + (PAGE_WIDTH - SMART_FONT.getbbox(clients)[2])/2, y), clients, font=SMART_FONT, fill=THEME.text_secondary_color.value)
                 y += 18
 
             # Show the eth0 address
@@ -549,7 +546,7 @@ class HomePage(object):
         y += self.iface_details(g_vars, "wlan0", x=x, y=y, padding=padding)
         y += 12
         status = self.check_wiperf_status()
-        canvas.text((x + (PAGE_WIDTH - SMART_FONT.getsize(status)[0])/2, y), status, font=SMART_FONT, fill=THEME.text_tertiary_color.value)
+        canvas.text((x + (PAGE_WIDTH - SMART_FONT.getbbox(status)[2])/2, y), status, font=SMART_FONT, fill=THEME.text_tertiary_color.value)
 
     def dhcp_server_mode(self, g_vars, x=0, y=0, padding=2):
         if g_vars['home_page_alternate']:
@@ -773,7 +770,7 @@ class HomePage(object):
         if bluetooth.bluetooth_power():
             bluetooth_icon = chr(0xf128)
             canvas = g_vars['draw']
-            x = x + (width - ICONS.getsize(bluetooth_icon)[0])/2 + 1
+            x = x + (width - ICONS.getbbox(bluetooth_icon)[2])/2 + 1
             canvas.text((x, y), bluetooth_icon, font=ICONS, fill=THEME.status_bar_foreground.value)
             return True
 
@@ -801,7 +798,7 @@ class HomePage(object):
         canvas = g_vars['draw']
 
         current_time = time.strftime("%H:%M")
-        current_time_width = FONTB11.getsize(current_time)[0]
+        current_time_width = FONTB11.getbbox(current_time)[2]
         canvas.rectangle((x, y, width, height), fill=THEME.status_bar_background.value)
         canvas.text((x + padding + 2, y + 2), current_time, font=FONTB11, fill=THEME.status_bar_foreground.value)
 
@@ -877,7 +874,7 @@ class HomePage(object):
             if len(contents) > 21:
                 contents = contents[0:19] + ".."
 
-            canvas.text((x + (PAGE_WIDTH - FONTB10.getsize(contents)[0])/2, y + padding), contents, font=FONTB10, fill=foreground)
+            canvas.text((x + (PAGE_WIDTH - FONTB10.getbbox(contents)[2])/2, y + padding), contents, font=FONTB10, fill=foreground)
 
         return height
 
@@ -894,6 +891,6 @@ class HomePage(object):
             if len(contents) > 21:
                 contents = contents[0:19] + ".."
 
-            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getsize(contents)[0])/2, y + padding), contents, font=SMART_FONT, fill=THEME.system_bar_foreground.value)
+            canvas.text((x + (PAGE_WIDTH - SMART_FONT.getbbox(contents)[2])/2, y + padding), contents, font=SMART_FONT, fill=THEME.system_bar_foreground.value)
 
         return height

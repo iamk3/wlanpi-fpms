@@ -8,6 +8,7 @@ from fpms.modules.pages.utils import *
 from fpms.modules.themes import THEME
 from fpms.modules.constants import (
     STATUS_BAR_HEIGHT,
+    TINY_FONT,
     SMART_FONT,
     MAX_TABLE_LINES,
 )
@@ -71,8 +72,8 @@ class PagedTable(object):
 
         # Draw title
         g_vars['draw'].rectangle((x, y, PAGE_WIDTH, STATUS_BAR_HEIGHT), fill=THEME.page_table_title_background.value)
-        title_size = SMART_FONT.getsize(title)
-        g_vars['draw'].text((x + (PAGE_WIDTH - title_size[0])/2, y + font_offset), title,  font=SMART_FONT, fill=THEME.page_table_title_foreground.value)
+        title_size = SMART_FONT.getbbox(title)
+        g_vars['draw'].text((x + (PAGE_WIDTH - title_size[2])/2, y + font_offset), title,  font=SMART_FONT, fill=THEME.page_table_title_foreground.value)
 
         # Draw back nav indicator
         g_vars['draw'].line([(2, (STATUS_BAR_HEIGHT/2)), (6, 4)], fill=THEME.page_table_title_foreground.value, width=1)
@@ -177,5 +178,19 @@ class PagedTable(object):
             item_list = item_list[table_display_max:]
 
         self.display_paged_table(g_vars, data, justify=justify)
+
+        return
+
+    def display_empty_page(self, g_vars, title='', footer=''):
+        '''
+        This function displays an empty page with a title (optional)
+        '''
+        data = {}
+        data['title'] = title
+        data['pages'] = []
+        self.display_paged_table(g_vars, data)
+
+        footer_size = SMART_FONT.getbbox(footer)
+        g_vars['draw'].text(((PAGE_WIDTH - footer_size[2])/2, PAGE_HEIGHT - 20), footer, font=SMART_FONT, fill=THEME.page_table_row_foreground.value)
 
         return

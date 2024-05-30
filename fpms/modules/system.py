@@ -7,11 +7,13 @@ import tzupdate
 import time
 
 from PIL import ImageFont
+from fpms.modules.env_utils import EnvUtils
 from fpms.modules.pages.alert import *
 from fpms.modules.pages.display import *
 from fpms.modules.pages.simpletable import *
 from fpms.modules.pages.pagedtable import *
 from fpms.modules.constants import (
+    IMAGE_DIR,
     SMART_FONT,
     FONT11,
     FONT12,
@@ -164,33 +166,34 @@ class System(object):
         margin = 2
 
         # Draw time
-        text = time.strftime("%X")
-        text_size = clock_font.getsize(text)
-        x = (PAGE_WIDTH - text_size[0])/2
-        y = PAGE_HEIGHT/4
+        text = time.strftime("%I:%M %p")
+        text_size = clock_font.getbbox(text)
+        x = (PAGE_WIDTH - text_size[2])/2
+        y = PAGE_HEIGHT/8
         g_vars['draw'].text((x, y), text, font=clock_font, fill=THEME.text_important_color.value)
-        y = PAGE_HEIGHT/4 + text_size[1]
+        y = y + text_size[1] + margin
 
         # Draw date
         text = time.strftime("%e %b. %Y")
-        text_size = FONT13.getsize(text)
-        x = (PAGE_WIDTH - text_size[0])/2
-        y = y + margin * 2
+        text_size = FONT13.getbbox(text)
+        x = (PAGE_WIDTH - text_size[2])/2
+        y = y + margin * 7
         g_vars['draw'].text((x, y), text, font=FONT13, fill=THEME.text_color.value)
         y = y + text_size[1] + margin
 
         # Draw city
         text = g_vars['timezone_selected'].split("/")[-1].replace("_", " ")
-        text_size = FONT11.getsize(text)
-        x = (PAGE_WIDTH - text_size[0])/2
-        y = y + margin * 3
+        text_size = FONT11.getbbox(text)
+        x = (PAGE_WIDTH - text_size[2])/2
+        y = y + margin * 8
         g_vars['draw'].text((x, y), text, font=FONT11, fill=THEME.text_secondary_color.value)
+        y = y + text_size[1] + margin
 
         # Draw timezone
         text = time.strftime("%Z")
-        text_size = FONT11.getsize(text)
-        x = (PAGE_WIDTH - text_size[0])/2
-        y = y + margin * 8
+        text_size = FONT11.getbbox(text)
+        x = (PAGE_WIDTH - text_size[2])/2
+        y = y + margin * 6
         g_vars['draw'].text((x, y), text, font=FONT11, fill=THEME.text_color.value)
 
         oled.drawImage(g_vars['image'])
@@ -230,6 +233,28 @@ class System(object):
             g_vars["disable_keys"] = False
 
         self.paged_table_obj.display_list_as_paged_table(g_vars, g_vars['about'], title="About")
+
+
+    def show_help(self, g_vars):
+        '''
+        Displays a QR code pointing to http://userguide.wlanpi.com/
+        '''
+
+        if g_vars['result_cache'] == False:
+            g_vars["disable_keys"] = True
+
+            self.display_obj.clear_display(g_vars)
+            self.paged_table_obj.display_empty_page(g_vars, title="Help", footer="userguide.wlanpi.com")
+
+            watermark = IMAGE_DIR + '/wlanpi.png'
+            qrcode_path = EnvUtils().get_help_qrcode(watermark)
+            if qrcode_path != None:
+                self.display_obj.stamp_qrcode(g_vars, qrcode_path,
+                    center_vertically=True)
+
+        g_vars['result_cache'] = True
+        g_vars["disable_keys"] = False
+
 
     def check_for_updates(self, g_vars):
 

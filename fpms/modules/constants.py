@@ -9,33 +9,29 @@ import os
 import pathlib
 from fpms.modules.env_utils import EnvUtils
 from fpms.modules.platform import *
+from fpms.modules.display import *
 
 __version__ = "2.0.3"
 __author__ = "wifinigel@gmail.com"
 
 env_util = EnvUtils()
 PLATFORM = env_util.get_platform()
+DISPLAY_TYPE = env_util.get_display_type()
+# Uncomment the line below to force a display type
+#DISPLAY_TYPE = DISPLAY_TYPE_ST7789
 
-# set misc vars depending on platform type
-HEIGHT_OFFSET = 0
-IMAGE_DIR = "images/128x64"
-MAX_TABLE_LINES = 4
-MAX_PAGE_LINES = 3
-DISPLAY_MODE = '1'
+IMAGE_DIR = "images/128x128"
+MAX_TABLE_LINES = 9
+MAX_PAGE_LINES = 8
+DISPLAY_MODE = 'RGB'
 
-if PLATFORM == PLATFORM_R4 or PLATFORM == PLATFORM_M4 or PLATFORM == PLATFORM_PRO:
-    HEIGHT_OFFSET = 64
-    IMAGE_DIR = "images/128x128"
-    MAX_TABLE_LINES = 9
-    MAX_PAGE_LINES = 8
-    DISPLAY_MODE = 'RGB'
-
-PAGE_SLEEP = 300             # Time in secs before sleep
-PAGE_WIDTH = 128             # Pixel size of screen width
-PAGE_HEIGHT = 64 + HEIGHT_OFFSET  # Pixel size of screen height
-NAV_BAR_TOP = 54 + HEIGHT_OFFSET  # Top pixel number of nav bar
+PAGE_SLEEP = 300 # Time in secs before sleep, Set to -1 to disable sleep, default 300
+PAGE_WIDTH = 128 # Pixel size of screen width
+PAGE_HEIGHT = 128 # Pixel size of screen height
+NAV_BAR_TOP = PAGE_HEIGHT - 10 # Top pixel number of nav bar
 STATUS_BAR_HEIGHT = 16
 SYSTEM_BAR_HEIGHT = 15
+
 MENU_VERSION =  __version__  # fpms version
 
 # figure out the script path
@@ -65,7 +61,6 @@ ICONS = ImageFont.truetype('fonts/ionicons.ttf', 13)
 
 # Linux programs
 IFCONFIG_FILE = '/sbin/ifconfig'
-IWCONFIG_FILE = '/sbin/iwconfig'
 IW_FILE = '/sbin/iw'
 IP_FILE = '/usr/sbin/ip'
 UFW_FILE = '/usr/sbin/ufw'
@@ -136,9 +131,5 @@ BUTTONS_PINS = {}
 
 if PLATFORM == PLATFORM_PRO:
     BUTTONS_PINS = BUTTONS_WLANPI_PRO
-elif PLATFORM == PLATFORM_R4:
-    BUTTONS_PINS = BUTTONS_WAVESHARE
-elif PLATFORM == PLATFORM_M4:
-    BUTTONS_PINS = BUTTONS_WAVESHARE
 else:
-    BUTTONS_PINS = BUTTONS_SAPPHIRE
+    BUTTONS_PINS = BUTTONS_WAVESHARE

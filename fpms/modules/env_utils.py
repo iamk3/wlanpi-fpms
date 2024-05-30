@@ -14,11 +14,11 @@ import qrcode
 
 from PIL import Image
 from fpms.modules.platform import *
+from fpms.modules.display import *
 
 class EnvUtils(object):
 
     def __init__(self):
-
         pass
 
     def get_platform(self):
@@ -40,35 +40,37 @@ class EnvUtils(object):
         # get output of wlanpi-model
         model_cmd = "wlanpi-model -b"
         try:
-            model = subprocess.check_output(model_cmd, shell=True).decode()
+            platform = subprocess.check_output(model_cmd, shell=True).decode().strip()
         except subprocess.CalledProcessError as exc:
             output = exc.model.decode()
             print("Err: issue running 'wlanpi-model -b' : ", model)
             return "Unknown"
 
-        if re.search(r'R4', model):
-            platform = PLATFORM_R4
-
-        if re.search(r'M4', model):
-            platform = PLATFORM_M4
-
-        if re.search(r'Pro', model):
-            platform = PLATFORM_PRO
+        if platform.endswith('?'):
+            platform = PLATFORM_UNKNOWN
 
         return platform
+
 
     def get_platform_name(self):
 
         platform = self.get_platform()
 
-        if platform == PLATFORM_R4:
-            return PLATFORM_NAME_R4
-        elif platform == PLATFORM_M4:
-            return PLATFORM_NAME_M4
-        elif platform == PLATFORM_PRO:
-            return PLATFORM_NAME_PRO
+        if platform == PLATFORM_UNKNOWN:
+            return PLATFORM_NAME_GENERIC
         else:
-            return PLATFORM_NAME_UNKNOWN
+            return PLATFORM_NAME_GENERIC + " " + platform
+
+
+    def get_display_type(self):
+
+         platform = self.get_platform()
+
+         if platform == PLATFORM_PRO:
+             return DISPLAY_TYPE_SSD1351
+         else:
+             return DISPLAY_TYPE_ST7735
+
 
     def get_mode(self, MODE_FILE):
 
@@ -91,6 +93,7 @@ class EnvUtils(object):
 
         return current_mode
 
+
     def get_image_ver(self, WLANPI_IMAGE_FILE):
 
         wlanpi_ver = "unknown"
@@ -107,6 +110,7 @@ class EnvUtils(object):
                     break
 
         return wlanpi_ver
+
 
     def get_hostname(self):
 
@@ -127,6 +131,7 @@ class EnvUtils(object):
 
         return None
 
+
     def get_wifi_qrcode_for_hostapd(self):
         '''
         Generates and returns the path to a WiFi QR code for the current Hostapd config.
@@ -143,6 +148,7 @@ class EnvUtils(object):
 
         return None
 
+
     def get_wifi_qrcode(self, ssid, passphrase):
         qrcode_spec = "WIFI:S:{};T:WPA;P:{};;".format(ssid, passphrase)
         qrcode_hash = hashlib.sha1(qrcode_spec.encode()).hexdigest()
@@ -153,5 +159,40 @@ class EnvUtils(object):
             qr.add_data(qrcode_spec)
             qr.make(fit=True)
             qr.make_image().save(qrcode_path)
+
+        return qrcode_path
+
+
+    def get_help_qrcode(self, watermark=''):
+        qrcode_spec = "http://userguide.wlanpi.com/"
+        qrcode_hash = hashlib.sha1(qrcode_spec.encode()).hexdigest()
+        qrcode_path = "/tmp/{}.png".format(qrcode_hash)
+
+        if not os.path.exists(qrcode_path):
+            qr = qrcode.QRCode(box_size=2, border=2, error_correction=qrcode.constants.ERROR_CORRECT_M)
+            qr.add_data(qrcode_spec)
+            qr.make(fit=True)
+            img = qr.make_image()
+
+            # Paste watermark
+            if os.path.exists(watermark):
+                wmark = Image.open(watermark)
+
+                if wmark is not None:
+                    # Convert to RGB
+                    img = img.convert("RGB")
+
+                    # Calculate size of watermark
+                    qr_width, qr_height = img.size
+                    max_size = min(qr_width, qr_height) // 5
+                    wmark = wmark.resize((max_size, max_size))
+                    wmark_width, wmark_height = wmark.size
+
+                    # Calculate position and paste watermark
+                    position = ((qr_width - wmark_width) // 2, (qr_height - wmark_height) // 2)
+                    img.paste(wmark, position)
+
+            # Cache QR code
+            img.save(qrcode_path)
 
         return qrcode_path

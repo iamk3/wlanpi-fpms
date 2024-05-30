@@ -9,6 +9,7 @@ Front Panel Menu System
 """
 
 import getopt
+import gpiod
 import os
 import os.path
 import random
@@ -22,10 +23,9 @@ import time
 import tty
 import types
 
-from gpiozero import Button as GPIO_Button
-from gpiozero import Device
-from gpiozero.pins.mock import MockFactory
 from PIL import Image, ImageDraw, ImageFont
+from gpiod.line import Bias, Edge
+from datetime import timedelta
 
 # Check we're running as root
 if not os.geteuid()==0:
@@ -432,6 +432,10 @@ optional options:
         system_obj = RegDomain(g_vars)
         system_obj.set_reg_domain_us(g_vars)
 
+    def set_reg_domain_ca():
+        system_obj = RegDomain(g_vars)
+        system_obj.set_reg_domain_ca(g_vars)
+
     def set_reg_domain_gb():
         system_obj = RegDomain(g_vars)
         system_obj.set_reg_domain_gb(g_vars)
@@ -448,6 +452,10 @@ optional options:
         system_obj = RegDomain(g_vars)
         system_obj.set_reg_domain_cz(g_vars)
 
+    def set_reg_domain_nl():
+        system_obj = RegDomain(g_vars)
+        system_obj.set_reg_domain_nl(g_vars)
+
     def set_reg_domain_de():
         system_obj = RegDomain(g_vars)
         system_obj.set_reg_domain_de(g_vars)
@@ -461,9 +469,9 @@ optional options:
         system_obj.set_time_zone_auto(g_vars)
 
     def set_time_zone():
-        g_vars['timezone_selected'] = (timezones_available[g_vars['current_menu_location'][4]]['country'] +
+        g_vars['timezone_selected'] = (timezones_available[g_vars['current_menu_location'][5]]['country'] +
         "/" +
-        timezones_available[g_vars['current_menu_location'][4]]['timezones'][g_vars['current_menu_location'][5]])
+        timezones_available[g_vars['current_menu_location'][5]]['timezones'][g_vars['current_menu_location'][6]])
 
         system_obj = TimeZone(g_vars)
         system_obj.set_time_zone_from_gvars(g_vars)
@@ -471,6 +479,10 @@ optional options:
     def show_about():
         system_obj = System(g_vars)
         system_obj.show_about(g_vars)
+
+    def show_help():
+        system_obj = System(g_vars)
+        system_obj.show_help(g_vars)
 
     def check_for_updates():
         system_obj = System(g_vars)
@@ -687,37 +699,37 @@ optional options:
         },
         {"name": "System", "action": [
             {"name": "About", "action": show_about},
-            {"name": "Battery", "action": show_battery},
-            # {"name": "Date & Time", "action": [
-            #     {"name": "Show Time & Zone", "action": show_date},
-            #     {"name": "Set Zone UK", "action": [
-            #         {"name": "Confirm & Reboot", "action": set_time_zone_london},]},
-            #     {"name": "Set Zone CZ", "action": [
-            #         {"name": "Confirm & Reboot", "action": set_time_zone_prague},]},
-            #     ]},
-            {"name": "Date & Time", "action": [
-                {"name": "Show Time & Zone", "action": show_date},
-                {"name": "Set Timezone", "action": [
-                    {"name": "Auto", "action" : set_time_zone_auto},
-                    {"name": "Manual", "action": g_vars['timezones_available']}
-                ]},
-                ]},
+            {"name": "Help", "action": show_help},
             {"name": "Summary", "action": show_summary},
-            {"name": "RF Domain", "action": [
-                {"name": "Show Domain", "action": show_reg_domain},
-                {"name": "Set Domain US", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_us},]},
-                {"name": "Set Domain GB", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_gb},]},
-                {"name": "Set Domain BR", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_br},]},
-                {"name": "Set Domain FR", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_fr},]},
-                {"name": "Set Domain CZ", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_cz},]},
-                {"name": "Set Domain DE", "action": [
-                    {"name": "Confirm & Reboot", "action": set_reg_domain_de},]},
+            {"name": "Battery", "action": show_battery},
+            {"name": "Settings", "action": [
+                {"name": "Date & Time", "action": [
+                    {"name": "Show Time & Zone", "action": show_date},
+                    {"name": "Set Timezone", "action": [
+                        {"name": "Auto", "action" : set_time_zone_auto},
+                        {"name": "Manual", "action": g_vars['timezones_available']}
+                    ]},
                 ]},
+                {"name": "RF Domain", "action": [
+                    {"name": "Show Domain", "action": show_reg_domain},
+                    {"name": "Set Domain US", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_us},]},
+                    {"name": "Set Domain CA", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_ca},]},
+                    {"name": "Set Domain GB", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_gb},]},
+                    {"name": "Set Domain BR", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_br},]},
+                    {"name": "Set Domain FR", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_fr},]},
+                    {"name": "Set Domain CZ", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_cz},]},
+                    {"name": "Set Domain NL", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_nl},]},
+                    {"name": "Set Domain DE", "action": [
+                        {"name": "Confirm & Reboot", "action": set_reg_domain_de},]},
+                ]},
+            ]},
             {"name": "Reboot",   "action": [
                 {"name": "Confirm", "action": reboot},
             ]
@@ -928,16 +940,14 @@ optional options:
     ###############################################################################
     # Buttons setup
     ###############################################################################
-    if emulate:
-        Device.pin_factory = MockFactory()
 
     # Set signal handlers for button presses - these fire every time a button
     # is pressed
-    def down_key():
-        button_press(BUTTONS_PINS['down'], g_vars)
-
     def up_key():
         button_press(BUTTONS_PINS['up'], g_vars)
+
+    def down_key():
+        button_press(BUTTONS_PINS['down'], g_vars)
 
     def left_key():
         button_press(BUTTONS_PINS['left'], g_vars)
@@ -957,36 +967,50 @@ optional options:
     def key_3():
         button_press(BUTTONS_PINS['key3'], g_vars)
 
-    button_down = GPIO_Button(BUTTONS_PINS['down'])
-    button_down.when_pressed = down_key
+    def monitor_buttons():
 
-    button_up = GPIO_Button(BUTTONS_PINS['up'])
-    button_up.when_pressed = up_key
+        line_setting = gpiod.LineSettings(
+            bias=Bias.PULL_UP,
+            edge_detection=Edge.FALLING,
+            debounce_period=timedelta(microseconds=10)
+        )
 
-    button_left = GPIO_Button(BUTTONS_PINS['left'])
-    button_left.when_pressed = left_key
+        lines = {k:line_setting for k in BUTTONS_PINS.values()}
 
-    button_right = GPIO_Button(BUTTONS_PINS['right'])
-    button_right.when_pressed = right_key
+        with gpiod.request_lines(
+            "/dev/gpiochip0",
+            lines,
+        ) as request:
+            while True:
+                request.wait_edge_events(1)
+                events = request.read_edge_events()
 
-    button_center = GPIO_Button(BUTTONS_PINS['center'])
-    button_center.when_pressed = center_key
+                for event in events:
+                    if event.line_offset == BUTTONS_PINS['up']:
+                        up_key()
+                    elif event.line_offset == BUTTONS_PINS['down']:
+                        down_key()
+                    elif event.line_offset == BUTTONS_PINS['left']:
+                        left_key()
+                    elif event.line_offset == BUTTONS_PINS['right']:
+                        right_key()
+                    elif event.line_offset == BUTTONS_PINS['center']:
+                        center_key()
+                    elif event.line_offset == BUTTONS_PINS['key1']:
+                        key_1()
+                    elif event.line_offset == BUTTONS_PINS['key2']:
+                        key_2()
+                    elif event.line_offset == BUTTONS_PINS['key3']:
+                        key_3()
 
-    button_key1 = None
-    button_key2 = None
-    button_key3 = None
 
-    if 'key1' in BUTTONS_PINS:
-        button_key1 = GPIO_Button(BUTTONS_PINS['key1'])
-        button_key1.when_pressed = key_1
+    m = threading.Thread(name="button-monitor", target=monitor_buttons)
+    m.daemon = True
+    m.start()
 
-    if 'key2' in BUTTONS_PINS:
-        button_key2 = GPIO_Button(BUTTONS_PINS['key2'])
-        button_key2.when_pressed = key_2
-
-    if 'key3' in BUTTONS_PINS:
-        button_key3 = GPIO_Button(BUTTONS_PINS['key3'])
-        button_key3.when_pressed = key_3
+    button_key1_present = 'key1' in BUTTONS_PINS
+    button_key2_present = 'key2' in BUTTONS_PINS
+    button_key3_present = 'key3' in BUTTONS_PINS
 
     running = True
 
@@ -1020,47 +1044,40 @@ optional options:
                 capture_screen()
 
             if (char == "8" or char == "w"):
-                button_up.pin.drive_low()
-                button_up.pin.drive_high()
+                up_key()
 
             if (char == "2" or char == "x"):
-                button_down.pin.drive_low()
-                button_down.pin.drive_high()
+                down_key()
 
             if (char == "4" or char == "a"):
-                button_left.pin.drive_low()
-                button_left.pin.drive_high()
+                left_key()
 
             if (char == "6" or char == "d"):
-                button_right.pin.drive_low()
-                button_right.pin.drive_high()
+                right_key()
 
             if (char == "5" or char == "s"):
-                button_center.pin.drive_low()
-                button_center.pin.drive_high()
+                center_key()
 
-            if button_key1:
+            if button_key1_present:
                 if (char == "*" or char == "i"):
-                    button_key1.pin.drive_low()
-                    button_key1.pin.drive_high()
+                    key_1()
 
-            if button_key2:
+            if button_key2_present:
                 if (char == "-" or char == "o"):
-                    button_key2.pin.drive_low()
-                    button_key2.pin.drive_high()
+                    key_2()
 
-            if button_key3:
+            if button_key3_present:
                 if (char == "+" or char == "p"):
-                    button_key3.pin.drive_low()
-                    button_key3.pin.drive_high()
+                    key_3()
 
     if emulate:
         print("UP = 'w', DOWN = 'x', LEFT = 'a', RIGHT = 'd', CENTER = 's'")
-        if button_key1 and button_key2 and button_key3:
+        if button_key1_present and button_key2_present and button_key3_present:
             print("KEY1 = 'i', KEY2 = 'o', KEY3 = 'p'")
         print("Press 'g' to capture the screen.")
         print("Press 'k' to terminate.")
         e = threading.Thread(name="button-emulator", target=emulate_buttons)
+        e.daemon = True
         e.start()
 
     ##############################################################################
@@ -1173,7 +1190,8 @@ optional options:
             if g_vars['pageSleepCountdown'] == 0 and g_vars['screen_cleared'] == False:
                 sleep_screen()
 
-            g_vars['pageSleepCountdown'] = g_vars['pageSleepCountdown'] - 1
+            if g_vars['pageSleepCountdown'] > 0:
+                g_vars['pageSleepCountdown'] = g_vars['pageSleepCountdown'] - 1
 
             # have a nap before we start our next loop
             time.sleep(2)
